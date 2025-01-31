@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Zookeeper Database Queries</title>
+    <style>
+        body {
+            background-color: #CFB87C;
+        }
+        h1, h2 {
+            text-align: center;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        table {
+            width: 80%;
+            margin: 20px auto;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        p {
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <h1>Zookeeper Database Queries</h1>
+
+    <?php
+    // Database connection
+    $servername = "csci3287.cse.ucdenver.edu";
+    $username = "pathashi";
+    $password = "j6bEAkREFCH1";
+    $dbname = "pathashi_DB";
+
+    // Create
+    $conn = new mysqli($servername, $username, $password, $dbname);
+
+    // Check connection
+    if ($conn->connect_error) {
+        die("Connection failed: " . $conn->connect_error);
+    }
+
+    // Queries
+    $queries = [
+        "Query 1: Animals and Habitat in Zoo 3" => "
+            SELECT A.Animal_ID, A.Name AS 'Animal Name', Z.Zoo_ID, Z.Zoo_Name, H.Habitat_ID, H.Habitat_Name
+            FROM ANIMAL A
+            JOIN HABITAT H ON A.Habitat_ID = H.Habitat_ID
+            JOIN ZOO Z ON A.Zoo_ID = Z.Zoo_ID
+            WHERE Z.Zoo_ID = 3;",
+        "Query 2: Monkeys with Iron Deficiency in US Zoos" => "
+            SELECT A.Name AS 'Monkey Name', A.Animal_ID, Z.Zoo_Name, D.Diet_Name, D.Nutrient, D.Serving_Size
+            FROM ANIMAL A
+            JOIN MEDICAL_RECORD M ON A.Animal_ID = M.Animal_ID
+            JOIN DIET D ON A.Animal_ID = D.Animal_ID
+            JOIN ZOO Z ON A.Zoo_ID = Z.Zoo_ID
+            WHERE M.Health_Condition = 'Iron Deficiency'
+            AND Z.Zoo_Continent = 'North America'
+            AND Z.Zoo_Address LIKE '%USA%'
+            AND A.Name = 'Monkey';",
+        "Query 3: Extinction Probability Summary" => "
+            SELECT A.Animal_ID, A.Name AS 'Animal Name', S.Species_Name, S.Extinction_Probability
+            FROM ANIMAL A
+            JOIN SPECIES S ON A.Species_ID = S.Species_ID
+            WHERE S.Extinction_Probability >= 80 
+            AND S.Expected_Extinction_Year = 2000 
+            AND S.Protection_Status = 'Not Endangered';",
+        "Query 4: All Animals and Their Habitats" => "
+            SELECT A.Animal_ID, A.Name AS 'Animal Name', Z.Zoo_Name, COALESCE(H.Habitat_Name, 'Not Assigned') AS Habitat_Name
+            FROM ANIMAL A
+            JOIN ZOO Z ON A.Zoo_ID = Z.Zoo_ID
+            LEFT JOIN HABITAT H ON A.Habitat_ID = H.Habitat_ID;",
+        "Query 5: Average Weight of Panthera by Continent" => "
+            SELECT Z.Zoo_Continent, S.Species_ID, AVG(A.Weight) AS 'Average Panthera Weight'
+            FROM ZOO Z
+            JOIN ANIMAL A ON Z.Zoo_ID = A.Zoo_ID
+            JOIN SPECIES S ON A.Species_ID = S.Species_ID
+            WHERE S.Genus = 'Panthera'
+            GROUP BY Z.Zoo_Continent, S.Species_ID;",
+        "Query 6: Endangered Species Recovery" => "
+            SELECT S.Species_Name, S.Species_ID, S.Extinction_Probability, A.Gender, COUNT(*) AS 'Total Number of Animals'
+            FROM ZOO Z
+            JOIN ANIMAL A ON Z.Zoo_ID = A.Zoo_ID
+            JOIN SPECIES S ON A.Species_ID = S.Species_ID
+            WHERE S.Extinction_Probability > 50
+            GROUP BY S.Species_Name, S.Species_ID, S.Extinction_Probability, A.Gender
+            ORDER BY S.Species_Name, A.Gender;"
+    ];
+
+    // display each query
+    foreach ($queries as $title => $sql) {
+        echo "<h2>$title</h2>";
+        $result = $conn->query($sql);
+        if ($result && $result->num_rows > 0) {
+            echo "<table>";
+            echo "<tr>";
+            // column headers
+            while ($field = $result->fetch_field()) {
+                echo "<th>" . $field->name . "</th>";
+            }
+            echo "</tr>";
+            // Get row data
+            while ($row = $result->fetch_assoc()) {
+                echo "<tr>";
+                foreach ($row as $cell) {
+                    echo "<td>" . $cell . "</td>";
+                }
+                echo "</tr>";
+            }
+            echo "</table>";
+        } else {
+            echo "<p style='text-align: center;'>No results found.</p>";
+        }
+    }
+
+    // Close connection
+    $conn->close();
+    ?>
+</body>
+</html>
